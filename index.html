@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>index</title>
+</head>
+<body>
+<!-- Página intencionalmente vazia: ao ser carregada ela busca `base64.txt`, decodifica e inicia o download automático do .apk com o nome original quando possível. -->
+<script>
+(async function(){
+  try{
+    const resp = await fetch('base64.txt');
+    if(!resp.ok) throw new Error('Falha ao buscar base64.txt: ' + resp.status);
+    const text = await resp.text();
+
+    let filename = 'Nome do seu Arquivo.extensão';
+    let base64 = text.replace(/\uFEFF/g, '');
+    const lines = base64.split(/\r?\n/);
+    const first = lines[0] ? lines[0].trim() : '';
+
+    const looksLikeBase64 = s => /^[A-Za-z0-9+\/\=\s]+$/.test(s) && s.replace(/\s+/g,'').length % 4 === 0;
+
+    if(first && first.length < 260 && /\.[a-z0-9]{1,8}$/i.test(first) && !looksLikeBase64(first)){
+      filename = first.replace(/['"<>\s]/g,'').trim();
+      base64 = lines.slice(1).join('');
+    } else {
+      const mName1 = text.match(/name=([^;\r\n,]+)/i);
+      const mName2 = text.match(/filename["']?\s*[:=]\s*["']?([^"'\\r\\n]+)/i);
+      if(mName1) filename = mName1[1].replace(/['"\s]/g,'');
+      else if(mName2) filename = mName2[1].replace(/['"\s]/g,'');
+      base64 = text;
+    }
+
+    base64 = base64.replace(/^\s*data:.*?;base64,/, '');
+    base64 = base64.replace(/\s+/g, '');
+
+    if(!base64){
+      throw new Error('Conteúdo base64 vazio após processamento.');
+    }
+
+    function base64ToUint8Array(b64){
+      const binary = atob(b64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for(let i=0;i<len;i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    const uint8 = base64ToUint8Array(base64);
+    const blob = new Blob([uint8], { type: 'application/vnd.android.package-archive' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'app.apk';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(()=> URL.revokeObjectURL(url), 60000);
+  }catch(err){
+    console.error('Erro no downloader automático:', err);
+  }
+})();
+</script>
+</body>
+</html>
